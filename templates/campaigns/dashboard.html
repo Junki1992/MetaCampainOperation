@@ -1,0 +1,274 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}ダッシュボード - Meta広告キャンペーン管理{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- 統計カード -->
+    <div class="col-md-3 mb-4">
+        <div class="card bg-primary text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="card-title">{{ total_campaigns }}</h4>
+                        <p class="card-text">総キャンペーン数</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-ad fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-4">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="card-title">{{ active_campaigns }}</h4>
+                        <p class="card-text">アクティブ</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-play fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-4">
+        <div class="card bg-warning text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="card-title">{{ paused_campaigns }}</h4>
+                        <p class="card-text">一時停止</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-pause fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-4">
+        <div class="card bg-info text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="card-title">{{ meta_accounts.count }}</h4>
+                        <p class="card-text">アカウント数</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-users fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- キャンペーン一覧 -->
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">
+            <i class="fas fa-list"></i> キャンペーン一覧
+        </h5>
+        <div>
+            <button class="btn btn-primary btn-sm" onclick="syncAllCampaigns()">
+                <i class="fas fa-sync"></i> 同期
+            </button>
+        </div>
+    </div>
+    <div class="card-body">
+        {% if campaigns %}
+            <div class="table-responsive">
+                <table class="table table-striped table-hover">
+                    <thead>
+                        <tr>
+                            <th>キャンペーン名</th>
+                            <th>アカウント</th>
+                            <th>ステータス</th>
+                            <th>目的</th>
+                            <th>日予算</th>
+                            <th>インプレッション</th>
+                            <th>クリック</th>
+                            <th>費用</th>
+                            <th>CTR</th>
+                            <th>CPC</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for campaign in campaigns %}
+                        <tr>
+                            <td>
+                                <a href="{% url 'campaigns:campaign_detail' campaign.id %}" class="text-decoration-none">
+                                    {{ campaign.name }}
+                                </a>
+                                <br>
+                                <small class="text-muted">{{ campaign.campaign_id }}</small>
+                            </td>
+                            <td>{{ campaign.meta_account.name }}</td>
+                            <td>
+                                {% if campaign.status == 'ACTIVE' %}
+                                    <span class="badge bg-success">アクティブ</span>
+                                {% elif campaign.status == 'PAUSED' %}
+                                    <span class="badge bg-warning">一時停止</span>
+                                {% elif campaign.status == 'DELETED' %}
+                                    <span class="badge bg-danger">削除済み</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">{{ campaign.get_status_display }}</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ campaign.objective|default:"-" }}</td>
+                            <td>
+                                {% if campaign.daily_budget %}
+                                    ¥{{ campaign.daily_budget|floatformat:0 }}
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
+                            <td>{{ campaign.impressions|floatformat:0 }}</td>
+                            <td>{{ campaign.clicks|floatformat:0 }}</td>
+                            <td>¥{{ campaign.spend|floatformat:0 }}</td>
+                            <td>{{ campaign.ctr|floatformat:2 }}%</td>
+                            <td>¥{{ campaign.cpc|floatformat:0 }}</td>
+                            <td>
+                                {% if campaign.can_toggle %}
+                                    {% if campaign.status == 'ACTIVE' %}
+                                        <button class="btn btn-warning btn-sm" onclick="toggleCampaign({{ campaign.id }}, 'pause')">
+                                            <i class="fas fa-pause"></i> 停止
+                                        </button>
+                                    {% else %}
+                                        <button class="btn btn-success btn-sm" onclick="toggleCampaign({{ campaign.id }}, 'start')">
+                                            <i class="fas fa-play"></i> 開始
+                                        </button>
+                                    {% endif %}
+                                {% else %}
+                                    <span class="text-muted">操作不可</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">キャンペーンがありません</h5>
+                <p class="text-muted">同期ボタンを押してキャンペーンを取得してください。</p>
+                <button class="btn btn-primary" onclick="syncAllCampaigns()">
+                    <i class="fas fa-sync"></i> キャンペーンを同期
+                </button>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function toggleCampaign(campaignId, action) {
+    const actionText = action === 'start' ? '開始' : '停止';
+    
+    if (!confirm(`キャンペーンを${actionText}しますか？`)) {
+        return;
+    }
+    
+    $.ajax({
+        url: '{% url "campaigns:ajax_toggle_campaign" %}',
+        method: 'POST',
+        data: JSON.stringify({
+            campaign_id: campaignId,
+            action: action
+        }),
+        contentType: 'application/json',
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken')
+        },
+        success: function(response) {
+            if (response.success) {
+                showAlert('success', response.message);
+                setTimeout(() => {
+                    location.reload();
+                }, 1000);
+            } else {
+                showAlert('danger', response.message);
+            }
+        },
+        error: function() {
+            showAlert('danger', '操作に失敗しました。');
+        }
+    });
+}
+
+function syncAllCampaigns() {
+    if (!confirm('すべてのキャンペーンを同期しますか？')) {
+        return;
+    }
+    
+    // 最初のアカウントで同期を実行（簡易版）
+    const accounts = [
+        {% for account in meta_accounts %}
+            {account_id: '{{ account.account_id }}', name: '{{ account.name }}'},
+        {% endfor %}
+    ];
+    if (accounts.length > 0) {
+        $.ajax({
+            url: '{% url "campaigns:ajax_sync_campaigns" %}',
+            method: 'POST',
+            data: JSON.stringify({
+                account_id: accounts[0].account_id
+            }),
+            contentType: 'application/json',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            success: function(response) {
+                if (response.success) {
+                    showAlert('success', response.message);
+                    setTimeout(() => {
+                        location.reload();
+                    }, 1000);
+                } else {
+                    showAlert('danger', response.message);
+                }
+            },
+            error: function() {
+                showAlert('danger', '同期に失敗しました。');
+            }
+        });
+    }
+}
+
+function showAlert(type, message) {
+    const alertHtml = `
+        <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    `;
+    $('.container').first().prepend(alertHtml);
+}
+
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+</script>
+{% endblock %} 
