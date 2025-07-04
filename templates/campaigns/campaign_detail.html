@@ -1,0 +1,238 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ campaign.name }} - キャンペーン詳細{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <!-- キャンペーン基本情報 -->
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="fas fa-info-circle"></i> キャンペーン情報
+                </h5>
+                <div>
+                    {% if campaign.can_toggle %}
+                        {% if campaign.status == 'ACTIVE' %}
+                            <button class="btn btn-warning btn-sm" onclick="toggleCampaign({{ campaign.id }}, 'pause')">
+                                <i class="fas fa-pause"></i> 停止
+                            </button>
+                        {% else %}
+                            <button class="btn btn-success btn-sm" onclick="toggleCampaign({{ campaign.id }}, 'start')">
+                                <i class="fas fa-play"></i> 開始
+                            </button>
+                        {% endif %}
+                    {% endif %}
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <table class="table table-borderless">
+                            <tr>
+                                <th>キャンペーン名:</th>
+                                <td>{{ campaign.name }}</td>
+                            </tr>
+                            <tr>
+                                <th>キャンペーンID:</th>
+                                <td><code>{{ campaign.campaign_id }}</code></td>
+                            </tr>
+                            <tr>
+                                <th>ステータス:</th>
+                                <td>
+                                    {% if campaign.status == 'ACTIVE' %}
+                                        <span class="badge bg-success">アクティブ</span>
+                                    {% elif campaign.status == 'PAUSED' %}
+                                        <span class="badge bg-warning">一時停止</span>
+                                    {% elif campaign.status == 'DELETED' %}
+                                        <span class="badge bg-danger">削除済み</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">{{ campaign.get_status_display }}</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>目的:</th>
+                                <td>{{ campaign.objective|default:"-" }}</td>
+                            </tr>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <table class="table table-borderless">
+                            <tr>
+                                <th>日予算:</th>
+                                <td>
+                                    {% if campaign.daily_budget %}
+                                        ¥{{ campaign.daily_budget|floatformat:0 }}
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>総予算:</th>
+                                <td>
+                                    {% if campaign.lifetime_budget %}
+                                        ¥{{ campaign.lifetime_budget|floatformat:0 }}
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>開始日時:</th>
+                                <td>{{ campaign.start_time|date:"Y/m/d H:i"|default:"-" }}</td>
+                            </tr>
+                            <tr>
+                                <th>終了日時:</th>
+                                <td>{{ campaign.stop_time|date:"Y/m/d H:i"|default:"-" }}</td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- パフォーマンス指標 -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="fas fa-chart-line"></i> パフォーマンス指標
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3 text-center">
+                        <div class="border rounded p-3">
+                            <h4 class="text-primary">{{ campaign.impressions|floatformat:0 }}</h4>
+                            <small class="text-muted">インプレッション</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3 text-center">
+                        <div class="border rounded p-3">
+                            <h4 class="text-success">{{ campaign.clicks|floatformat:0 }}</h4>
+                            <small class="text-muted">クリック</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3 text-center">
+                        <div class="border rounded p-3">
+                            <h4 class="text-info">¥{{ campaign.spend|floatformat:0 }}</h4>
+                            <small class="text-muted">費用</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3 text-center">
+                        <div class="border rounded p-3">
+                            <h4 class="text-warning">{{ campaign.ctr|floatformat:2 }}%</h4>
+                            <small class="text-muted">CTR</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 操作履歴 -->
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="fas fa-history"></i> 操作履歴
+                </h6>
+            </div>
+            <div class="card-body">
+                {% if operations %}
+                    <div class="list-group list-group-flush">
+                        {% for operation in operations %}
+                        <div class="list-group-item d-flex justify-content-between align-items-start">
+                            <div>
+                                <h6 class="mb-1">{{ operation.get_operation_display }}</h6>
+                                <small class="text-muted">
+                                    {{ operation.performed_at|date:"Y/m/d H:i" }}
+                                    {% if operation.performed_by %}
+                                        by {{ operation.performed_by.username }}
+                                    {% endif %}
+                                </small>
+                            </div>
+                            <span class="badge {% if operation.success %}bg-success{% else %}bg-danger{% endif %} rounded-pill">
+                                {% if operation.success %}成功{% else %}失敗{% endif %}
+                            </span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="text-muted">操作履歴がありません。</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 戻るボタン -->
+<div class="mt-4">
+    <a href="{% url 'campaigns:dashboard' %}" class="btn btn-secondary">
+        <i class="fas fa-arrow-left"></i> ダッシュボードに戻る
+    </a>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function toggleCampaign(campaignId, action) {
+    const actionText = action === 'start' ? '開始' : '停止';
+    
+    if (!confirm(`キャンペーンを${actionText}しますか？`)) {
+        return;
+    }
+    
+    $.ajax({
+        url: '{% url "campaigns:ajax_toggle_campaign" %}',
+        method: 'POST',
+        data: JSON.stringify({
+            campaign_id: campaignId,
+            action: action
+        }),
+        contentType: 'application/json',
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken')
+        },
+        success: function(response) {
+            if (response.success) {
+                showAlert('success', response.message);
+                setTimeout(() => {
+                    location.reload();
+                }, 1000);
+            } else {
+                showAlert('danger', response.message);
+            }
+        },
+        error: function() {
+            showAlert('danger', '操作に失敗しました。');
+        }
+    });
+}
+
+function showAlert(type, message) {
+    const alertHtml = `
+        <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    `;
+    $('.container').first().prepend(alertHtml);
+}
+
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+</script>
+{% endblock %}

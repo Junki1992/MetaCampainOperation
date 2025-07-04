@@ -22,4 +22,11 @@ urlpatterns = [
     # AJAX URLs
     path('ajax/toggle/', views.ajax_toggle_campaign, name='ajax_toggle_campaign'),
     path('ajax/sync/', views.ajax_sync_campaigns, name='ajax_sync_campaigns'),
+
+    # アカウント管理URLs
+    path('accounts/', views.account_list, name='account_list'),
+    path('accounts/add/', views.account_add, name='account_add'),
+    path('accounts/<int:account_id>/edit/', views.account_edit, name='account_edit'),
+    path('accounts/<int:account_id>/delete/', views.account_delete, name='account_delete'),
+    path('accounts/<int:account_id>/', views.account_detail, name='account_detail'),
 ] 

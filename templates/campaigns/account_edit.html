@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Metaアカウント編集{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-6">
+    <div class="card mt-4">
+      <div class="card-header">
+        <h4><i class="fas fa-edit"></i> Metaアカウント編集</h4>
+      </div>
+      <div class="card-body">
+        <form method="post" novalidate>
+          {% csrf_token %}
+          <div class="mb-3">
+            <label for="name" class="form-label">アカウント名</label>
+            <input type="text" class="form-control" id="name" name="name" value="{{ account.name }}" required>
+          </div>
+          <div class="mb-3">
+            <label for="account_id" class="form-label">アカウントID</label>
+            <input type="text" class="form-control" id="account_id" name="account_id" value="{{ account.account_id }}" readonly>
+          </div>
+          <div class="mb-3">
+            <label for="access_token" class="form-label">アクセストークン（任意）</label>
+            <input type="text" class="form-control" id="access_token" name="access_token" value="{{ account.access_token }}">
+            <div class="form-text">個別のアクセストークンを使いたい場合のみ入力してください。</div>
+          </div>
+          <div class="form-check mb-3">
+            <input class="form-check-input" type="checkbox" id="is_active" name="is_active" {% if account.is_active %}checked{% endif %}>
+            <label class="form-check-label" for="is_active">有効</label>
+          </div>
+          <div class="d-grid gap-2">
+            <button type="submit" class="btn btn-primary">
+              <i class="fas fa-save"></i> 更新
+            </button>
+            <a href="{% url 'campaigns:account_list' %}" class="btn btn-secondary">戻る</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

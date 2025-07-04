@@ -1,4 +1,4 @@
-from django.shortcuts import render, get_object_or_404
+from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.http import JsonResponse
@@ -68,6 +68,100 @@ def sync_campaigns(request):
     
     meta_accounts = MetaAccount.objects.filter(is_active=True)
     return render(request, 'campaigns/sync_campaigns.html', {'meta_accounts': meta_accounts})
+
+
+@login_required
+def account_list(request):
+    """Metaアカウント一覧画面"""
+    accounts = MetaAccount.objects.all().order_by('-created_at')
+    
+    context = {
+        'accounts': accounts,
+        'total_accounts': accounts.count(),
+        'active_accounts': accounts.filter(is_active=True).count(),
+    }
+    return render(request, 'campaigns/account_list.html', context)
+
+
+@login_required
+def account_add(request):
+    """Metaアカウント追加画面"""
+    if request.method == 'POST':
+        account_id = request.POST.get('account_id')
+        if account_id and not account_id.startswith('act_'):
+            account_id = f'act_{account_id}'
+        name = request.POST.get('name')
+        access_token = request.POST.get('access_token')
+        
+        if account_id and name:
+            try:
+                # 既存アカウントかチェック
+                existing = MetaAccount.objects.filter(account_id=account_id).first()
+                if existing:
+                    messages.error(request, 'このアカウントIDは既に登録されています。')
+                else:
+                    MetaAccount.objects.create(
+                        account_id=account_id,
+                        name=name,
+                        access_token=access_token or '',
+                        is_active=True
+                    )
+                    messages.success(request, 'アカウントを追加しました。')
+                    return redirect('campaigns:account_list')
+            except Exception as e:
+                messages.error(request, f'アカウント追加エラー: {str(e)}')
+    
+    return render(request, 'campaigns/account_add.html')
+
+
+@login_required
+def account_edit(request, account_id):
+    """Metaアカウント編集画面"""
+    account = get_object_or_404(MetaAccount, id=account_id)
+    
+    if request.method == 'POST':
+        name = request.POST.get('name')
+        is_active = request.POST.get('is_active') == 'on'
+        access_token = request.POST.get('access_token')
+        
+        if name:
+            try:
+                account.name = name
+                account.is_active = is_active
+                if access_token:
+                    account.access_token = access_token
+                account.save()
+                messages.success(request, 'アカウントを更新しました。')
+                return redirect('campaigns:account_list')
+            except Exception as e:
+                messages.error(request, f'アカウント更新エラー: {str(e)}')
+    
+    context = {
+        'account': account,
+    }
+    return render(request, 'campaigns/account_edit.html', context)
+
+
+@login_required
+def account_delete(request, account_id):
+    """Metaアカウント削除"""
+    account = get_object_or_404(MetaAccount, id=account_id)
+    
+    if request.method == 'POST':
+        try:
+            account.delete()
+            messages.success(request, 'アカウントを削除しました。')
+        except Exception as e:
+            messages.error(request, f'アカウント削除エラー: {str(e)}')
+    
+    return redirect('campaigns:account_list')
+
+
+@login_required
+def account_detail(request, account_id):
+    """Metaアカウント詳細画面"""
+    account = get_object_or_404(MetaAccount, id=account_id)
+    return render(request, 'campaigns/account_detail.html', {'account': account})
 
 
 # API Views

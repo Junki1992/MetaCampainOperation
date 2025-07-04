@@ -1,0 +1,54 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Metaアカウント詳細{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-8">
+    <div class="card mt-4">
+      <div class="card-header">
+        <h4><i class="fas fa-user"></i> Metaアカウント詳細</h4>
+      </div>
+      <div class="card-body">
+        <table class="table table-borderless">
+          <tr>
+            <th>アカウント名</th>
+            <td>{{ account.name }}</td>
+          </tr>
+          <tr>
+            <th>アカウントID</th>
+            <td><code>{{ account.account_id }}</code></td>
+          </tr>
+          <tr>
+            <th>有効</th>
+            <td>
+              {% if account.is_active %}
+                <span class="badge bg-success">有効</span>
+              {% else %}
+                <span class="badge bg-secondary">無効</span>
+              {% endif %}
+            </td>
+          </tr>
+          <tr>
+            <th>作成日</th>
+            <td>{{ account.created_at|date:"Y/m/d H:i" }}</td>
+          </tr>
+          <tr>
+            <th>更新日</th>
+            <td>{{ account.updated_at|date:"Y/m/d H:i" }}</td>
+          </tr>
+        </table>
+        <div class="d-flex gap-2 mt-4">
+          <a href="{% url 'campaigns:account_edit' account.id %}" class="btn btn-info">
+            <i class="fas fa-edit"></i> 編集
+          </a>
+          <a href="{% url 'campaigns:account_list' %}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> 一覧に戻る
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
